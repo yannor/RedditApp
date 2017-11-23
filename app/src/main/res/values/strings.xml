@@ -1,0 +1,28 @@
+<resources>
+    <!-- General -->
+    <string name="app_name">Reddit</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="action_settings">Settings</string>
+
+    <!-- Subreddits -->
+    <!-- Options to choose out when long clicking subreddit-->
+    <string-array name="extraOptions">
+        <item>Delete</item>
+    </string-array>
+
+    <!-- Posts -->
+    <string name="action_save_post">Save post</string>
+    <string name="action_refresh">Refresh</string>
+
+    <!-- Detail Post-->
+    <string name="originalLink">Go to original picture</string>
+    <string name="unavailable">Picture is not available</string>
+    <string name="title_activity_fragment__settings">Settings</string>
+
+    <!-- Settings -->
+    <string name="countBatch">How many posts in a batch?</string>
+    <string name="btnCancel">Cancel</string>
+    <string name="btnSave">Save</string>
+
+</resources>
