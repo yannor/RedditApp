@@ -1,6 +1,7 @@
 package hogent.reddit.activities.fragments;
 
 import android.app.Fragment;
+import android.app.FragmentManager;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -18,21 +19,20 @@ import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 
+import javax.xml.datatype.Duration;
+
 import hogent.reddit.R;
+import hogent.reddit.activities.MainActivity;
 import hogent.reddit.database.DatabaseHandler;
 import hogent.reddit.domain.Post;
 import hogent.reddit.utils.TouchListener;
 
 public class Fragment_Detail extends Fragment {
 
-    private Post post;
-
     TextView tvTitle, tvText, tvUnavailable;
-
     ImageView ivMedia;
-
     Button btnOriginal;
-
+    private Post post;
     private DatabaseHandler db;
 
     public Fragment_Detail() {
@@ -42,8 +42,8 @@ public class Fragment_Detail extends Fragment {
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment__detail, container, false);
 
+        View view = inflater.inflate(R.layout.fragment__detail, container, false);
 
         tvTitle = (TextView) view.findViewById(R.id.tvTitle);
         tvText = (TextView) view.findViewById(R.id.tvText);
@@ -51,7 +51,7 @@ public class Fragment_Detail extends Fragment {
         ivMedia = (ImageView) view.findViewById(R.id.ivMedia);
         btnOriginal = (Button) view.findViewById(R.id.btnOriginalLink);
 
-        Bundle args = getArguments();
+        final Bundle args = getArguments();
         post = (Post) args.get("post");
 
         if (args.getInt("saved") == 1) {
@@ -82,11 +82,16 @@ public class Fragment_Detail extends Fragment {
 
         view.setOnTouchListener(new TouchListener(this.getActivity()) {
                                     public void onSwipeRight() {
-
+                                        int position = args.getInt("position");
+                                        if (position == 0) {
+                                            makeToast("Dit is eerste", false);
+                                        } else {
+                                            ((MainActivity) getActivity()).openPostAtPos(position - 1);
+                                        }
                                     }
 
                                     public void onSwipeLeft() {
-
+                                        ((MainActivity) getActivity()).openPostAtPos(args.getInt("position") + 1);
                                     }
                                 }
         );
@@ -132,11 +137,19 @@ public class Fragment_Detail extends Fragment {
     public void savePost() {
 
         db.savePost(post);
-        Toast toast = Toast.makeText(getContext(), "Post saved", Toast.LENGTH_SHORT);
-        toast.show();
-
-
+        makeToast("Post saved", false);
     }
 
     //endregion
+
+    public void makeToast(String text, boolean longDur) {
+        Toast toast;
+        if (longDur) {
+             toast = Toast.makeText(getActivity(), text, Toast.LENGTH_SHORT);
+        } else {
+             toast = Toast.makeText(getActivity(), text, Toast.LENGTH_SHORT);
+        }
+
+        toast.show();
+    }
 }

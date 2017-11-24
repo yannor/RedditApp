@@ -1,154 +1,69 @@
-package hogent.reddit.activities.fragments;
+package hogent.reddit.utils;
 
-import android.app.Fragment;
-import android.app.FragmentManager;
-import android.os.Bundle;
-import android.support.annotation.Nullable;
+import android.app.Activity;
 import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.AbsListView;
-import android.widget.AdapterView;
-import android.widget.ListView;
+import android.widget.Adapter;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import java.util.ArrayList;
+import java.util.List;
 
-import hogent.reddit.R;
-import hogent.reddit.activities.MainActivity;
 import hogent.reddit.adapters.PostsAdapter;
 import hogent.reddit.database.DatabaseHandler;
 import hogent.reddit.database.SessionManager;
 import hogent.reddit.domain.Post;
+import hogent.reddit.domain.SubReddit;
 import hogent.reddit.service.APIInterface;
 import hogent.reddit.service.RedditService;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class Fragment_Posts extends Fragment implements AdapterView.OnItemClickListener, AbsListView.OnScrollListener {
+/**
+ * Created by Yannick on 24/11/2017.
+ */
 
-    //region variables
-
-    // Own classes
-    private RedditService rs = new RedditService();
-    private DatabaseHandler db;
-    private PostsAdapter adapter;
+public class PostsHandler {
+    private List<Post> listPosts;
     private SessionManager session;
 
-    // Basic Variables
-    private ArrayList<Post> listPosts;
-    private String subName;
     private int countBatch;
 
-    // Layout
-    private ListView lvPosts;
-    private View loadingPanel;
+    private RedditService rs = new RedditService();
+    private DatabaseHandler db;
+    private String subName;
+    private PostsAdapter adapter;
 
-
-    Bundle argsLoader = new Bundle();
-    //endregion
-
-    String TAG = "Fragment_SavedPosts";
-
-    public Fragment_Posts() {
-        super();
-    }
-
-    @Nullable
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment__posts, container, false);
-        setHasOptionsMenu(true);
-        lvPosts = (ListView) view.findViewById(R.id.listVPosts);
-        lvPosts.setOnItemClickListener(this);
-        lvPosts.setOnScrollListener(this);
-        adapter = new PostsAdapter(getActivity(), listPosts);
-        lvPosts.setAdapter(adapter);
-        loadingPanel = view.findViewById(R.id.loadingPanel);
-        session = new SessionManager(getActivity());
-        countBatch = session.getBatch();
-
-
-        Log.i(TAG, "Posts loaded: " + countBatch);
-
-        if (argsLoader.getInt("loader") == 1) {
-            loadingPanel.setVisibility(View.VISIBLE);
-
-        } else {
-            loadingPanel.setVisibility(View.GONE);
-        }
-
-        argsLoader.putInt("loader", 1);
-        return view;
-    }
-
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        argsLoader.putInt("loader", 1);
-        Bundle args = getArguments();
-        subName = args.get("subName").toString();
-        getActivity().setTitle(subName);
-        db = new DatabaseHandler(getActivity());
+    public PostsHandler(Activity main) {
         listPosts = new ArrayList<>();
+        db = new DatabaseHandler(main);
+        session = new SessionManager(main);
+        countBatch = session.getBatch();
+        adapter = new PostsAdapter(main, listPosts);
+    }
 
+    public List<Post> getListPosts() {
+        return listPosts;
+    }
 
-        int opened = Integer.parseInt(getArguments().get("opened").toString());
-        if (opened == 1) {
-            loadLastState(db.getSubReddit(subName).getFirstNameList(), db.getSubReddit(subName).getSizeList());
-        } else {
+    public List<Post> startList(boolean initial, String subName) {
+        System.out.println(subName);
+        this.subName = subName;
+        if(initial) {
             initListPosts();
         }
-        // new setup().execute();
-
-    }
-
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        db.updateListInfo(subName, listPosts.get(0).getFullName(), listPosts.size(), lvPosts.getFirstVisiblePosition());
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        db.updateListInfo(subName, listPosts.get(0).getFullName(), listPosts.size(), lvPosts.getFirstVisiblePosition());
-    }
-
-
-
-    //region scrolling
-
-    @Override
-    public void onScrollStateChanged(AbsListView absListView, int i) {
-        int threshold = 1;
-        int count = lvPosts.getCount();
-
-        if (i == SCROLL_STATE_IDLE) {
-            if (lvPosts.getLastVisiblePosition() >= count - threshold) {
-                //TODO make it smoother
-                loadNextBatch();
-            }
+        else {
+            SubReddit sub = db.getSubReddit(subName);
+            loadLastState(sub.getFirstNameList(), sub.getSizeList());
         }
+
+        return listPosts;
     }
 
-    @Override
-    public void onScroll(AbsListView absListView, int i, int i1, int i2) {
-    }
-
-    //endregion
-
-    //region loadingPosts
 
     public void initListPosts() {
         listPosts.clear();
@@ -194,7 +109,7 @@ public class Fragment_Posts extends Fragment implements AdapterView.OnItemClickL
 
                 }
                 adapter.notifyDataSetChanged();
-                loadingPanel.setVisibility(View.GONE);
+                //loadingPanel.setVisibility(View.GONE);
             }
 
             @Override
@@ -205,6 +120,7 @@ public class Fragment_Posts extends Fragment implements AdapterView.OnItemClickL
         });
 
     }
+
 
     public void loadNextBatch() {
         APIInterface api = rs.getClient().create(APIInterface.class);
@@ -260,9 +176,7 @@ public class Fragment_Posts extends Fragment implements AdapterView.OnItemClickL
     }
 
     public void loadLastState(String first, int limit) {
-
         APIInterface api = rs.getClient().create(APIInterface.class);
-
 
         // Load all the posts before the last one and after the first one
         Call<JsonElement> call = api.getPostsAdvanced(subName, first, limit);
@@ -296,9 +210,7 @@ public class Fragment_Posts extends Fragment implements AdapterView.OnItemClickL
                 }
                 adapter.notifyDataSetChanged();
                 int posEnded = db.getSubReddit(subName).getPositionList();
-                lvPosts.setSelection(posEnded);
-                loadingPanel.setVisibility(View.GONE);
-                ((MainActivity)getActivity()).setListPosts(listPosts);
+                //lvPosts.setSelection(posEnded);
             }
 
             @Override
@@ -310,75 +222,7 @@ public class Fragment_Posts extends Fragment implements AdapterView.OnItemClickL
 
     }
 
-    //endregion
-
-    //region navigating
-
-
-    @Override
-    public void onSaveInstanceState(Bundle savedInstanceState) {
-        savedInstanceState.putParcelableArrayList("listPosts", listPosts);
-        super.onSaveInstanceState(savedInstanceState);
+    public PostsAdapter getAdapater(){
+        return this.adapter;
     }
-
-    @Override
-    public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-
-        Post post = (Post) lvPosts.getItemAtPosition(i);
-        argsLoader.putInt("loader", 0);
-
-        ((MainActivity)getActivity()).setListPosts(listPosts);
-        ((MainActivity)getActivity()).openPost(post, i, true);
-       /* Class fragClass = Fragment_Detail.class;
-        argsLoader.putInt("loader", 0);
-
-        try {
-            Fragment frag = (Fragment) fragClass.newInstance();
-            Bundle args = new Bundle();
-            args.putParcelable("post", post);
-            args.putInt("saved", 0);
-            frag.setArguments(args);
-            switchFragment(frag);
-        } catch (Exception e) {
-            e.printStackTrace();
-            Log.i("StartFrag", "Failed");
-        }*/
-    }
-
-
-    //endregion
-
-    //region menu
-
-    @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.menu_posts, menu);
-        super.onCreateOptionsMenu(menu, inflater);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        loadingPanel.setVisibility(View.VISIBLE);
-
-        switch (item.getItemId()) {
-            case R.id.action_refresh:
-                initListPosts();
-                return true;
-            case R.id.action_refresh_bar:
-                initListPosts();
-                return true;
-
-
-            default:
-                // If we got here, the user's action was not recognized.
-                // Invoke the superclass to handle it.
-                return super.onOptionsItemSelected(item);
-        }
-    }
-
-
-    //endregion
-
-
 }
-

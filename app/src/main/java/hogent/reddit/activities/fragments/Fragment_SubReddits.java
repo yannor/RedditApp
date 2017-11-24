@@ -24,7 +24,9 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.List;
 
-import butterknife.Bind;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import hogent.reddit.R;
 import hogent.reddit.activities.MainActivity;
 import hogent.reddit.database.DatabaseHandler;
@@ -39,7 +41,7 @@ public class Fragment_SubReddits extends Fragment {
 
     private List<String> subReddits;
 
-    @Bind(R.id.subRedditList)
+    @BindView(R.id.subRedditList)
     ListView lvSubRedditList;
     //endregion
 
@@ -57,7 +59,7 @@ public class Fragment_SubReddits extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        ButterKnife.bind(this.getActivity());
     }
 
     @Override
@@ -118,7 +120,7 @@ public class Fragment_SubReddits extends Fragment {
 
                 // ListView Clicked item value
                 String sub = (String) lvSubRedditList.getItemAtPosition(position);
-                Toast toast = Toast.makeText(getContext(), sub, Toast.LENGTH_SHORT);
+                Toast toast = Toast.makeText(getActivity(), sub, Toast.LENGTH_SHORT);
                 toast.show();
 
 
@@ -136,6 +138,7 @@ public class Fragment_SubReddits extends Fragment {
                     args.putString("subName", sub);
                     args.putInt("opened", opened);
                     frag.setArguments(args);
+                    ((MainActivity)getActivity()).setFrag(frag);
                     switchFragment(frag);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -148,11 +151,11 @@ public class Fragment_SubReddits extends Fragment {
     }
 
     public void dialogBoxAddingSub() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle("Add subreddit");
 
 // Set up the input
-        final EditText input = new EditText(getContext());
+        final EditText input = new EditText(getActivity());
 
 // Specify the type of input expected;
         input.setInputType(InputType.TYPE_CLASS_TEXT);
@@ -172,7 +175,7 @@ public class Fragment_SubReddits extends Fragment {
                     }
                 }
                 if (exists) {
-                    Toast toast = Toast.makeText(getContext(), "Subreddit already added", Toast.LENGTH_LONG);
+                    Toast toast = Toast.makeText(getActivity(), "Subreddit already added", Toast.LENGTH_LONG);
                     toast.show();
                     dialogBoxAddingSub();
                 } else {
@@ -194,7 +197,7 @@ public class Fragment_SubReddits extends Fragment {
 
     public void dialogBoxDeletingSub(String nameSubreddit) {
         final String nameSub = nameSubreddit;
-        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle("Delete " + nameSub);
         builder.setMessage("Are you sure you want to delete this subreddit?");
 

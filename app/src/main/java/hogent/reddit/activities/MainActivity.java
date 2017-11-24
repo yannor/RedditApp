@@ -12,24 +12,38 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Adapter;
 import android.widget.FrameLayout;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import hogent.reddit.R;
 import hogent.reddit.activities.fragments.Fragment_Detail;
+import hogent.reddit.activities.fragments.Fragment_Posts;
 import hogent.reddit.activities.fragments.Fragment_SavedPosts;
 import hogent.reddit.activities.fragments.Fragment_Settings;
 import hogent.reddit.activities.fragments.Fragment_SubReddits;
+import hogent.reddit.adapters.PostsAdapter;
 import hogent.reddit.domain.Post;
+import hogent.reddit.utils.PostsHandler;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private NavigationView navigationView;
+    private List<Post> listPosts;
+    private PostsHandler postsHandler;
+
+    private Fragment frag;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_activity);
 
+        this.frag = new Fragment_Posts();
+        this.postsHandler = new PostsHandler(this);
+        this.listPosts = postsHandler.getListPosts();
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -129,6 +143,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public void openSavedPosts() {
         navigationView.getMenu().getItem(1).setChecked(true);
         FrameLayout content = (FrameLayout) findViewById(R.id.main_content);
+
         getFragmentManager().beginTransaction().replace(R.id.main_content, new Fragment_SavedPosts()).commit();
     }
 
@@ -138,7 +153,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         getFragmentManager().beginTransaction().replace(R.id.main_content, new Fragment_Settings()).commit();
     }
 
-    public void openPost(Post post) {
+
+    public void openPost(Post post, int pos, boolean backStack) {
 
         Class fragClass = Fragment_Detail.class;
 
@@ -147,12 +163,31 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             Bundle args = new Bundle();
             args.putParcelable("post", post);
             args.putInt("saved", 0);
+            args.putInt("position", pos);
             frag.setArguments(args);
-            switchFragment(frag);
+            if(backStack) {
+                switchFragment(frag);
+            }
+            else {
+                switchFragmentWithoutStack(frag);
+            }
         } catch (Exception e) {
             e.printStackTrace();
             Log.i("StartFrag", "Failed");
         }
+    }
+
+    public void openPostAtPos(int position) {
+        if(position >= listPosts.size()-1) {
+            ((Fragment_Posts)frag).loadNextBatch();
+            System.out.println("Happened succesfully");
+        }
+
+        openPost(listPosts.get(position), position, false);
+    }
+
+    public void setListPosts(List<Post> newPosts) {
+        this.listPosts = newPosts;
     }
 
     private void switchFragment(Fragment frag) {
@@ -160,8 +195,38 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         FragmentManager fragmentManager = getFragmentManager();
         fragmentManager.beginTransaction()
                 .replace(R.id.main_content, frag, frag.getTag())
-                .addToBackStack(frag.getTag())
+                .addToBackStack(null)
                 .commit();
 
+    }
+
+    private void switchFragmentWithoutStack(Fragment frag) {
+
+        FragmentManager fragmentManager = getFragmentManager();
+        fragmentManager.popBackStack();
+        fragmentManager.beginTransaction()
+                .replace(R.id.main_content, frag, frag.getTag())
+                .addToBackStack(null)
+                .commit();
+
+    }
+
+    public List<Post> startList(boolean initial, String subName) {
+        listPosts = this.postsHandler.startList(initial, subName);
+        return listPosts;
+    }
+
+    public List<Post> loadNextBatch () {
+        listPosts = this.postsHandler.getListPosts();
+        return listPosts;
+
+    }
+
+    public PostsAdapter getAdapater(){
+        return this.postsHandler.getAdapater();
+    }
+
+    public void setFrag(Fragment frag) {
+        this.frag = frag;
     }
 }
